@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imu-uart-pipeline"
+version = "0.1.0"
+description = "UART-based IMU data pipeline with emulator and host consumer"
+requires-python = ">=3.10"
+dependencies = [
+    "pyserial",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[project.scripts]
+emulator = "imu_uart.emulator.__main__:main"
+consumer = "imu_uart.consumer.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
