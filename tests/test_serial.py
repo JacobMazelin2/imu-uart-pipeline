@@ -7,9 +7,7 @@ import serial
 
 SOCAT = shutil.which("socat")
 
-# Virtual ptys ignore baudrate, so use a standard value that works
-# on macOS. The spec's 4096 default is non-standard and only works
-# on real UART hardware or Linux ptys.
+# 4096 is non-standard and fails on macOS ptys; doesn't matter for virtual ports
 BAUDRATE = 9600
 
 
