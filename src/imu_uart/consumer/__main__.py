@@ -16,9 +16,19 @@ def main():
     logging.basicConfig(level=getattr(logging, args.log_level))
 
     history = History()
-    consumer = UARTConsumer(args.port_path, args.baudrate, history)
 
-    response = consumer.send_command(Command.START)
+    try:
+        consumer = UARTConsumer(args.port_path, args.baudrate, history)
+    except Exception as e:
+        logging.error("failed to open serial port: %s", e)
+        return
+
+    try:
+        response = consumer.send_command(Command.START)
+    except TimeoutError:
+        logging.error("emulator did not respond, is it running?")
+        return
+
     if not response.ok:
         logging.error("failed to start streaming: %s", response.status)
         return

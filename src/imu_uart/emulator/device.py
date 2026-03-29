@@ -12,20 +12,28 @@ log = logging.getLogger(__name__)
 
 class EmulatorDevice:
     def __init__(self, port: str, baudrate: int, frequency: int):
+        if frequency <= 0:
+            raise ValueError(f"frequency must be positive, got {frequency}")
         self.port = serial.Serial(port, baudrate=baudrate, timeout=0.01)
         self.frequency = frequency
+        self.period = 1.0 / frequency
         self.streaming = False
+        self._next_tick = 0.0
         self._buffer = bytearray()
 
     def run(self):
         """Main loop: listen for commands, stream data when active."""
         log.info("emulator ready, waiting for commands")
-        try: 
+        try:
             while True:
-                self._check_commands()
-                if self.streaming:
+                now = time.monotonic()
+                if self.streaming and now >= self._next_tick:
                     self._send_sample()
-                    time.sleep(1.0 / self.frequency)
+                    self._next_tick += self.period
+
+                wait = max(0, self._next_tick - time.monotonic()) if self.streaming else 0.1
+                self.port.timeout = wait
+                self._check_commands()
         except KeyboardInterrupt:
             log.info("shutting down")
         finally:
@@ -53,6 +61,7 @@ class EmulatorDevice:
 
         if cmd == Command.START:
             self.streaming = True
+            self._next_tick = time.monotonic()
             log.info("streaming started")
         elif cmd == Command.STOP:
             self.streaming = False
