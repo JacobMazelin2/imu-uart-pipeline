@@ -6,6 +6,7 @@ import serial
 from imu_uart.protocol import framing
 from imu_uart.protocol.commands import Command, CommandResponse, decode_response
 from imu_uart.protocol.models import IMUSample
+from imu_uart.consumer.orientation import OrientationEstimator
 from imu_uart.consumer.parser import parse_payload
 
 log = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class UARTConsumer:
         self.port = serial.Serial(port, baudrate=baudrate, timeout=0.1)
         self.history = history
         self._buffer = bytearray()
-        
+        self._orientation = OrientationEstimator()
         
     def send_command(self, cmd: Command) -> CommandResponse:
         self.port.write(framing.encode_message(cmd.value))
@@ -58,9 +59,10 @@ class UARTConsumer:
             self.port.close()
 
     def _process_sample(self, sample: IMUSample):
+        quaternion = self._orientation.update(sample)
         entry = {
             "timestamp": sample.timestamp_accel,
-            "sample": [sample.accel_x, sample.accel_y, sample.accel_z],
+            "sample": quaternion,
         }
         self.history.append(entry)
-        log.debug("stored sample t=%d", sample.timestamp_accel)
+        log.debug("orientation: [%.4f, %.4f, %.4f, %.4f]", *quaternion)
